@@ -1,0 +1,143 @@
+const mongoose = require('mongoose');
+const Invoice = require('../models/Invoice');
+const Notification = require('../models/Notification');
+const { createAuditLog } = require('./auditLog.service');
+
+function formatDateKey(dateObj) {
+  const d = new Date(dateObj);
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+async function syncInvoiceNotifications(userId = null, companyId = null) {
+  try {
+    const filter = companyId
+      ? { companyId }
+      : (userId ? { user: userId } : { companyId: new mongoose.Types.ObjectId() });
+    
+    const invoices = await Invoice.find(filter);
+
+    const today = new Date();
+    const todayStr = formatDateKey(today);
+    const todayMidnight = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
+
+    for (const inv of invoices) {
+      const isPaid = (inv.status || '').toUpperCase() === 'PAID' || (inv.paymentStatus || '').toUpperCase() === 'PAID';
+      
+      if (isPaid) {
+        continue;
+      }
+
+      const dueStr = inv.dueDate || inv.paymentDueDate;
+      if (!dueStr) {
+        continue;
+      }
+
+      const dueDt = new Date(dueStr);
+      if (isNaN(dueDt.getTime())) {
+        continue;
+      }
+
+      const dueMidnight = new Date(dueDt.getFullYear(), dueDt.getMonth(), dueDt.getDate()).getTime();
+      const diffMs = dueMidnight - todayMidnight;
+      const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
+
+      const invNumber = inv.invoiceNumber || inv.fileName || 'Invoice';
+      let notificationType = null;
+      let notificationTitle = '';
+      let notificationMsg = '';
+
+      if (diffDays === 1) {
+        notificationType = 'DUE_TOMORROW';
+        notificationTitle = 'Payment Due Tomorrow';
+        notificationMsg = `Invoice ${invNumber} is due tomorrow. Please make the payment.`;
+      } else if (diffDays === 0) {
+        notificationType = 'DUE_TODAY';
+        notificationTitle = 'Payment Due Today';
+        notificationMsg = `Invoice ${invNumber} is due today. Please make the payment.`;
+      } else if (diffDays < 0) {
+        notificationType = 'OVERDUE';
+        notificationTitle = 'Invoice Overdue';
+        notificationMsg = `Invoice ${invNumber} is overdue.`;
+      }
+
+      if (notificationType) {
+        // Prevent creating duplicate notification if one already exists for this invoice and type
+        const existing = await Notification.findOne({
+          invoiceId: inv._id,
+          type: notificationType,
+        });
+
+        if (!existing) {
+          try {
+            const newNotif = new Notification({
+              companyId: inv.companyId || companyId,
+              userId: inv.user || userId,
+              type: notificationType,
+              invoiceId: inv._id,
+              title: notificationTitle,
+              message: notificationMsg,
+              isRead: false,
+            });
+            await newNotif.save();
+
+            await createAuditLog({
+              companyId: inv.companyId || companyId,
+              userId: inv.user || userId,
+              userName: 'System',
+              action: 'PAYMENT_REMINDER_SENT',
+              entityType: 'Invoice',
+              entityId: String(inv._id),
+              description: `Payment reminder sent for invoice ${invNumber}`,
+            });
+          } catch (err) {
+            console.error('Error saving invoice notification:', err.message);
+          }
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Error syncing invoice notifications:', error.message);
+  }
+}
+
+async function createInvoiceUploadNotification(invoiceDoc, reviewRequired = false) {
+  try {
+    if (!invoiceDoc || !invoiceDoc._id) return;
+
+    const invNumber = invoiceDoc.invoiceNumber || invoiceDoc.fileName || 'Invoice';
+    const type = reviewRequired ? 'REVIEW_REQUIRED' : 'UPLOAD_SUCCESS';
+    const title = reviewRequired ? 'Invoice Review Required' : 'Invoice Uploaded';
+    const message = reviewRequired
+      ? `Invoice ${invNumber} needs review because some information could not be extracted.`
+      : `New invoice ${invNumber} has been added.`;
+
+    const existing = await Notification.findOne({
+      invoiceId: invoiceDoc._id,
+      type,
+    });
+
+    if (!existing) {
+      const notif = new Notification({
+        companyId: invoiceDoc.companyId || null,
+        userId: invoiceDoc.user || null,
+        type,
+        invoiceId: invoiceDoc._id,
+        title,
+        message,
+        isRead: false,
+      });
+
+      await notif.save();
+    }
+  } catch (err) {
+    console.error('Error creating invoice upload notification:', err.message);
+  }
+}
+
+module.exports = {
+  syncInvoiceNotifications,
+  createInvoiceUploadNotification,
+};
