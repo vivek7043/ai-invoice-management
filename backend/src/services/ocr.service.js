@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const { createWorker } = require('tesseract.js');
-const pdfPoppler = require('pdf-poppler');
+const { pdfToPng } = require('pdf-to-png-converter');
 
 /**
  * OCR pipeline converting PDF pages to high-resolution images and performing Tesseract OCR
@@ -10,13 +10,6 @@ const pdfPoppler = require('pdf-poppler');
 async function runOcrPipeline(filePath, initialPageCount = 1) {
   console.log('Running high-resolution OCR pipeline on PDF...');
   const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'invoice-ocr-'));
-  const options = {
-    format: 'png',
-    out_dir: tempDir,
-    out_prefix: 'page',
-    page: null,
-    scale: 2048,
-  };
 
   let ocrCombinedText = '';
   let ocrPageCount = initialPageCount;
@@ -24,7 +17,11 @@ async function runOcrPipeline(filePath, initialPageCount = 1) {
   const tessDataDir = path.join(__dirname, '../../resources/tessdata');
 
   try {
-    await pdfPoppler.convert(filePath, options);
+    await pdfToPng(filePath, {
+      outputFolder: tempDir,
+      outputFileMask: 'page',
+      viewportScale: 2.0,
+    });
     const imageFiles = fs.readdirSync(tempDir)
       .filter((name) => name.endsWith('.png'))
       .sort((a, b) => Number(a.match(/(\d+)/)?.[1] || 0) - Number(b.match(/(\d+)/)?.[1] || 0))

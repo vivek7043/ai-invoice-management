@@ -2,13 +2,12 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const { createWorker } = require('tesseract.js');
-const pdfPoppler = require('pdf-poppler');
-const { extractInvoiceFields } = require('./services/aiService');
+const { pdfToPng } = require('pdf-to-png-converter');
+const { extractInvoiceFields } = require('../../src/services/ai.service');
 
 async function runOcrOnPdf(filePath) {
   const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'invoice-ocr-test-'));
-  const options = { format: 'png', out_dir: tempDir, out_prefix: 'page', page: null };
-  await pdfPoppler.convert(filePath, options);
+  await pdfToPng(filePath, { outputFolder: tempDir, outputFileMask: 'page', viewportScale: 2.0 });
   const imageFiles = fs.readdirSync(tempDir)
     .filter((name) => name.endsWith('.png'))
     .sort((a, b) => Number(a.match(/(\d+)/)?.[1] || 0) - Number(b.match(/(\d+)/)?.[1] || 0))
@@ -28,7 +27,7 @@ async function runOcrOnPdf(filePath) {
 }
 
 (async () => {
-  const invoicesDir = path.join(__dirname, 'uploads', 'invoices');
+  const invoicesDir = path.join(__dirname, '../../uploads', 'invoices');
   const files = fs.readdirSync(invoicesDir).filter((f) => f.endsWith('G175972857.pdf'));
   const filePath = path.join(invoicesDir, files[0]);
 
