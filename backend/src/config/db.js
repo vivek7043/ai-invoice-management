@@ -8,6 +8,10 @@ const connectDB = async () => {
     console.log(`MongoDB Connected: ${conn.connection.host}`);
     console.log("Mongo DB:", mongoose.connection.name);
     console.log("Mongo Host:", mongoose.connection.host);
+
+    const { ensureNotificationIndexes } = require('../services/notification.service');
+    await ensureNotificationIndexes();
+
     return conn;
   } catch (error) {
     console.error(`MongoDB Connection Error: ${error.message}`);

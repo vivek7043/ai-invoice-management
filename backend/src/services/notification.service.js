@@ -64,10 +64,13 @@ async function syncInvoiceNotifications(userId = null, companyId = null) {
       }
 
       if (notificationType) {
-        // Prevent creating duplicate notification if one already exists for this invoice and type
+        const eventId = `reminder_${inv._id}_${notificationType}_${todayStr}`;
+        // Prevent creating duplicate notification if one already exists for this invoice and type or eventId
         const existing = await Notification.findOne({
-          invoiceId: inv._id,
-          type: notificationType,
+          $or: [
+            { eventId },
+            { invoiceId: inv._id, type: notificationType },
+          ],
         });
 
         if (!existing) {
@@ -76,6 +79,7 @@ async function syncInvoiceNotifications(userId = null, companyId = null) {
               companyId: inv.companyId || companyId,
               userId: inv.user || userId,
               type: notificationType,
+              eventId,
               invoiceId: inv._id,
               title: notificationTitle,
               message: notificationMsg,
@@ -93,7 +97,7 @@ async function syncInvoiceNotifications(userId = null, companyId = null) {
               description: `Payment reminder sent for invoice ${invNumber}`,
             });
           } catch (err) {
-            console.error('Error saving invoice notification:', err.message);
+            console.error(`Error saving invoice notification (type: ${notificationType}, invoiceId: ${inv._id}):`, err.message);
           }
         }
       }
@@ -113,10 +117,20 @@ async function createInvoiceUploadNotification(invoiceDoc, reviewRequired = fals
     const message = reviewRequired
       ? `Invoice ${invNumber} needs review because some information could not be extracted.`
       : `New invoice ${invNumber} has been added.`;
+    const eventId = `upload_${invoiceDoc._id}_${type}`;
+
+    console.log('Creating upload notification:', {
+      invoiceId: String(invoiceDoc._id),
+      type,
+      eventId,
+      eventIdType: typeof eventId,
+    });
 
     const existing = await Notification.findOne({
-      invoiceId: invoiceDoc._id,
-      type,
+      $or: [
+        { eventId },
+        { invoiceId: invoiceDoc._id, type },
+      ],
     });
 
     if (!existing) {
@@ -124,20 +138,61 @@ async function createInvoiceUploadNotification(invoiceDoc, reviewRequired = fals
         companyId: invoiceDoc.companyId || null,
         userId: invoiceDoc.user || null,
         type,
+        eventId,
         invoiceId: invoiceDoc._id,
         title,
         message,
         isRead: false,
       });
 
+      console.log('Notification eventId before save:', notif.eventId);
+
       await notif.save();
     }
   } catch (err) {
-    console.error('Error creating invoice upload notification:', err.message);
+    console.error(`Error creating invoice upload notification (invoiceId: ${invoiceDoc?._id}):`, err.message);
+  }
+}
+
+async function ensureNotificationIndexes() {
+  try {
+    const collections = await mongoose.connection.db.listCollections({ name: 'notifications' }).toArray();
+    if (collections.length === 0) {
+      await Notification.createCollection();
+    }
+
+    const indexList = await Notification.collection.listIndexes().toArray();
+    console.log('Current notifications collection indexes:', indexList.map((i) => i.name));
+
+    const eventIdIndex = indexList.find((idx) => idx.name === 'eventId_1');
+
+    if (eventIdIndex) {
+      const isUnique = !!eventIdIndex.unique;
+      const partialExpr = eventIdIndex.partialFilterExpression;
+      const hasCorrectPartial = !!(
+        partialExpr &&
+        partialExpr.eventId &&
+        (partialExpr.eventId.$type === 'string' || partialExpr.eventId['$type'] === 'string')
+      );
+
+      if (!isUnique || !hasCorrectPartial) {
+        console.log(`⚠️ Incompatible eventId_1 index found (isUnique: ${isUnique}, hasCorrectPartial: ${hasCorrectPartial}). Dropping index...`);
+        await Notification.collection.dropIndex('eventId_1');
+        console.log('✅ Dropped incompatible eventId_1 index successfully.');
+      } else {
+        console.log('✅ Existing eventId_1 index is already a unique index with correct partialFilterExpression.');
+      }
+    }
+
+    await Notification.syncIndexes();
+    console.log('✅ Notification indexes synchronized (eventId_1 partial unique index).');
+  } catch (err) {
+    console.error('Error during notification index verification:', err.message);
   }
 }
 
 module.exports = {
   syncInvoiceNotifications,
   createInvoiceUploadNotification,
+  ensureNotificationIndexes,
 };

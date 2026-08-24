@@ -10,6 +10,7 @@ const notificationSchema = new mongoose.Schema(
       enum: ['DUE_TOMORROW', 'DUE_TODAY', 'OVERDUE', 'UPLOAD_SUCCESS', 'REVIEW_REQUIRED', 'PAYMENT_RECEIVED', 'INFO'],
       required: true,
     },
+    eventId: { type: String, default: undefined },
     title: { type: String, required: true },
     message: { type: String, required: true },
     isRead: { type: Boolean, default: false },
@@ -20,5 +21,12 @@ const notificationSchema = new mongoose.Schema(
 );
 
 notificationSchema.index({ companyId: 1, isRead: 1, createdAt: -1 });
+notificationSchema.index(
+  { eventId: 1 },
+  {
+    unique: true,
+    partialFilterExpression: { eventId: { $type: 'string' } },
+  }
+);
 
 module.exports = mongoose.model('Notification', notificationSchema);
