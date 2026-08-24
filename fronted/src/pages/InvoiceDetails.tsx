@@ -123,8 +123,9 @@ export default function InvoiceDetails() {
     setError(null)
 
     try {
+      const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000').replace(/\/$/, '')
       const token = localStorage.getItem('token') || sessionStorage.getItem('token')
-      const response = await fetch(`http://localhost:5000/api/invoices/${id}`, {
+      const response = await fetch(`${API_BASE_URL}/api/invoices/${id}`, {
         headers: {
           Authorization: token ? `Bearer ${token}` : '',
         },
@@ -155,8 +156,9 @@ export default function InvoiceDetails() {
     setPayErrorMsg(null)
 
     try {
+      const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000').replace(/\/$/, '')
       const token = localStorage.getItem('token') || sessionStorage.getItem('token')
-      const response = await fetch(`http://localhost:5000/api/invoices/${id}/pay`, {
+      const response = await fetch(`${API_BASE_URL}/api/invoices/${id}/pay`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -239,7 +241,8 @@ export default function InvoiceDetails() {
     statusBadgeClass = 'bg-rose-500/10 text-rose-600 border-rose-500/20'
   }
 
-  const pdfUrl = data.filePath ? `http://localhost:5000${data.filePath}` : null
+  const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000').replace(/\/$/, '')
+  const pdfUrl = data.filePath ? `${API_BASE_URL}${data.filePath.startsWith('/') ? '' : '/'}${data.filePath}` : null
 
   // 1. Invoice Info Section Presence
   const hasInvoiceInfo = [invNumber, data.invoiceType, invDate, dueDate, normStatus, data.currency, data.paymentTerms].some(hasMeaningfulData)

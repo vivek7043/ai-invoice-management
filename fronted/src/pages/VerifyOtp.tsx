@@ -40,7 +40,8 @@ export default function VerifyOtp() {
 
     setSubmitting(true)
     try {
-      const response = await fetch('http://localhost:5000/api/auth/verify-reset-otp', {
+      const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000').replace(/\/$/, '')
+      const response = await fetch(`${API_BASE_URL}/api/auth/verify-reset-otp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, otp: cleanOtp }),
@@ -70,7 +71,8 @@ export default function VerifyOtp() {
     setResending(true)
 
     try {
-      const response = await fetch('http://localhost:5000/api/auth/forgot-password', {
+      const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000').replace(/\/$/, '')
+      const response = await fetch(`${API_BASE_URL}/api/auth/forgot-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),

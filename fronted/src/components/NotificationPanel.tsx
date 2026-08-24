@@ -54,8 +54,9 @@ export default function NotificationPanel() {
     setLoading(true)
     setError(null)
     try {
+      const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000').replace(/\/$/, '')
       const token = localStorage.getItem('token') || sessionStorage.getItem('token')
-      const res = await fetch('http://localhost:5000/api/notifications', {
+      const res = await fetch(`${API_BASE_URL}/api/notifications`, {
         headers: {
           Authorization: token ? `Bearer ${token}` : '',
         },
@@ -81,8 +82,9 @@ export default function NotificationPanel() {
   const markAsRead = async (id: string, e?: React.MouseEvent) => {
     if (e) e.stopPropagation()
     try {
+      const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000').replace(/\/$/, '')
       const token = localStorage.getItem('token') || sessionStorage.getItem('token')
-      const res = await fetch(`http://localhost:5000/api/notifications/${id}/read`, {
+      const res = await fetch(`${API_BASE_URL}/api/notifications/${id}/read`, {
         method: 'PATCH',
         headers: {
           Authorization: token ? `Bearer ${token}` : '',
@@ -102,8 +104,9 @@ export default function NotificationPanel() {
 
   const markAllRead = async () => {
     try {
+      const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000').replace(/\/$/, '')
       const token = localStorage.getItem('token') || sessionStorage.getItem('token')
-      const res = await fetch('http://localhost:5000/api/notifications/read-all', {
+      const res = await fetch(`${API_BASE_URL}/api/notifications/read-all`, {
         method: 'PATCH',
         headers: {
           Authorization: token ? `Bearer ${token}` : '',
@@ -120,8 +123,9 @@ export default function NotificationPanel() {
   const deleteNotification = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation()
     try {
+      const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000').replace(/\/$/, '')
       const token = localStorage.getItem('token') || sessionStorage.getItem('token')
-      const res = await fetch(`http://localhost:5000/api/notifications/${id}`, {
+      const res = await fetch(`${API_BASE_URL}/api/notifications/${id}`, {
         method: 'DELETE',
         headers: {
           Authorization: token ? `Bearer ${token}` : '',

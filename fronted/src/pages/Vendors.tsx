@@ -64,6 +64,7 @@ export default function Vendors() {
     setError(null)
 
     try {
+      const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000').replace(/\/$/, '')
       const token = localStorage.getItem('token') || sessionStorage.getItem('token')
       const queryParams = new URLSearchParams({
         search,
@@ -73,7 +74,7 @@ export default function Vendors() {
         limit: '10',
       })
 
-      const response = await fetch(`http://localhost:5000/api/vendors?${queryParams.toString()}`, {
+      const response = await fetch(`${API_BASE_URL}/api/vendors?${queryParams.toString()}`, {
         headers: {
           Authorization: token ? `Bearer ${token}` : '',
         },

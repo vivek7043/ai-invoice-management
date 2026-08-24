@@ -49,8 +49,9 @@ export default function AuditLogs() {
     setLoading(true)
     setError(null)
     try {
+      const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000').replace(/\/$/, '')
       const token = localStorage.getItem('token') || sessionStorage.getItem('token')
-      const url = `http://localhost:5000/api/audit-logs?page=${currentPage}&limit=${limit}&search=${encodeURIComponent(search)}`
+      const url = `${API_BASE_URL}/api/audit-logs?page=${currentPage}&limit=${limit}&search=${encodeURIComponent(search)}`
       
       const res = await fetch(url, {
         headers: {
@@ -84,8 +85,9 @@ export default function AuditLogs() {
   }
 
   const handleExportCsv = () => {
+    const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000').replace(/\/$/, '')
     const token = localStorage.getItem('token') || sessionStorage.getItem('token')
-    const exportUrl = `http://localhost:5000/api/audit-logs/export?search=${encodeURIComponent(searchQuery)}`
+    const exportUrl = `${API_BASE_URL}/api/audit-logs/export?search=${encodeURIComponent(searchQuery)}`
     
     const link = document.createElement('a')
     link.href = exportUrl

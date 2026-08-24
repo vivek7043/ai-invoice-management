@@ -45,8 +45,9 @@ export default function Settings() {
       const headers = { Authorization: token ? `Bearer ${token}` : '' }
 
       try {
+        const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000').replace(/\/$/, '')
         // 1. Profile
-        const profRes = await fetch('http://localhost:5000/api/settings/profile', { headers })
+        const profRes = await fetch(`${API_BASE_URL}/api/settings/profile`, { headers })
         const profData = await profRes.json()
         if (profRes.ok && profData.success) {
           const loadedProf = {
@@ -64,7 +65,7 @@ export default function Settings() {
         }
 
         // 2. Company
-        const compRes = await fetch('http://localhost:5000/api/settings/company', { headers })
+        const compRes = await fetch(`${API_BASE_URL}/api/settings/company`, { headers })
         const compData = await compRes.json()
         if (compRes.ok && compData.success && compData.company) {
           const loadedComp = {
@@ -119,7 +120,8 @@ export default function Settings() {
     }
 
     try {
-      const res = await fetch('http://localhost:5000/api/settings/profile', {
+      const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000').replace(/\/$/, '')
+      const res = await fetch(`${API_BASE_URL}/api/settings/profile`, {
         method: 'PUT',
         headers: { Authorization: token ? `Bearer ${token}` : '' },
         body: formData,
@@ -156,7 +158,8 @@ export default function Settings() {
     }
 
     try {
-      const res = await fetch('http://localhost:5000/api/settings/company', {
+      const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000').replace(/\/$/, '')
+      const res = await fetch(`${API_BASE_URL}/api/settings/company`, {
         method: 'PUT',
         headers: { Authorization: token ? `Bearer ${token}` : '' },
         body: formData,
@@ -189,9 +192,10 @@ export default function Settings() {
       return
     }
 
+    const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000').replace(/\/$/, '')
     const token = localStorage.getItem('token') || sessionStorage.getItem('token')
     try {
-      const res = await fetch('http://localhost:5000/api/settings/password', {
+      const res = await fetch(`${API_BASE_URL}/api/settings/password`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -216,8 +220,9 @@ export default function Settings() {
     return <div className="p-8 text-center text-[#64748b] dark:text-slate-400 text-xs">Loading settings from database...</div>
   }
 
-  const profileAvatarUrl = profilePreview || (profile.profileImage ? `http://localhost:5000${profile.profileImage}` : null)
-  const companyLogoUrl = logoPreview || (company.logo ? `http://localhost:5000${company.logo}` : null)
+  const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000').replace(/\/$/, '')
+  const profileAvatarUrl = profilePreview || (profile.profileImage ? `${API_BASE_URL}${profile.profileImage.startsWith('/') ? '' : '/'}${profile.profileImage}` : null)
+  const companyLogoUrl = logoPreview || (company.logo ? `${API_BASE_URL}${company.logo.startsWith('/') ? '' : '/'}${company.logo}` : null)
 
   return (
     <div className="space-y-6 pb-12">

@@ -119,6 +119,7 @@ export default function Reports() {
     setError(null)
 
     try {
+      const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000').replace(/\/$/, '')
       const token = localStorage.getItem('token') || sessionStorage.getItem('token')
       const queryParams = new URLSearchParams({
         reportType,
@@ -126,7 +127,7 @@ export default function Reports() {
         endDate,
       })
 
-      const response = await fetch(`http://localhost:5000/api/reports/data?${queryParams.toString()}`, {
+      const response = await fetch(`${API_BASE_URL}/api/reports/data?${queryParams.toString()}`, {
         headers: {
           Authorization: token ? `Bearer ${token}` : '',
         },
@@ -162,13 +163,15 @@ export default function Reports() {
   }
 
   const handleExportPDF = () => {
+    const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000').replace(/\/$/, '')
     const queryParams = new URLSearchParams({ startDate, endDate })
-    window.open(`http://localhost:5000/api/reports/export/pdf?${queryParams.toString()}`, '_blank')
+    window.open(`${API_BASE_URL}/api/reports/export/pdf?${queryParams.toString()}`, '_blank')
   }
 
   const handleExportExcel = () => {
+    const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000').replace(/\/$/, '')
     const queryParams = new URLSearchParams({ startDate, endDate })
-    window.open(`http://localhost:5000/api/reports/export/excel?${queryParams.toString()}`, '_blank')
+    window.open(`${API_BASE_URL}/api/reports/export/excel?${queryParams.toString()}`, '_blank')
   }
 
   const renderCustomLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent }: any) => {

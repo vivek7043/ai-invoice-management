@@ -52,7 +52,8 @@ export default function Login() {
 
     setLoginSubmitting(true)
     try {
-      const response = await fetch('http://localhost:5000/api/auth/login', {
+      const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000').replace(/\/$/, '')
+      const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: loginEmail, password: loginPassword }),
@@ -116,7 +117,8 @@ export default function Login() {
         formData.append('profileImage', imageFile)
       }
 
-      const response = await fetch('http://localhost:5000/api/auth/register', {
+      const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000').replace(/\/$/, '')
+      const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
         method: 'POST',
         body: formData,
       })

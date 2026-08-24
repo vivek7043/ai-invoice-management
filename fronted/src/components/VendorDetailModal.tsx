@@ -24,6 +24,7 @@ export interface VendorDetail {
   paidAmount?: number
   pendingAmount?: number
   overdueAmount?: number
+  lastInvoiceDate?: string
   status?: string
   invoices?: VendorInvoice[]
 }

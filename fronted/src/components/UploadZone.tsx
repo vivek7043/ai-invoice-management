@@ -28,7 +28,8 @@ export default function UploadZone(){
     formData.append('file', f)
 
     try {
-      const response = await fetch('http://localhost:5000/api/invoices/upload', {
+      const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000').replace(/\/$/, '')
+      const response = await fetch(`${API_BASE_URL}/api/invoices/upload`, {
         method: 'POST',
         headers: {
           Authorization: token ? `Bearer ${token}` : '',

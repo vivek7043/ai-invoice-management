@@ -36,7 +36,8 @@ export default function Navbar() {
   useEffect(() => {
     const fetchUnreadCount = async () => {
       try {
-        const res = await fetch('http://localhost:5000/api/notifications', {
+        const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000').replace(/\/$/, '')
+        const res = await fetch(`${API_BASE_URL}/api/notifications`, {
           headers: getAuthHeaders(),
         })
         const data = await res.json()
@@ -264,7 +265,7 @@ export default function Navbar() {
         >
           {profileImg ? (
             <img
-              src={profileImg.startsWith('http') ? profileImg : `http://localhost:5000${profileImg}`}
+              src={profileImg.startsWith('http') ? profileImg : `${(import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000').replace(/\/$/, '')}${profileImg.startsWith('/') ? '' : '/'}${profileImg}`}
               alt={ownerName}
               className="w-9 h-9 sm:w-10 sm:h-10 rounded-full object-cover border-2 border-indigo-500/30 shadow-sm group-hover:border-indigo-500 transition-colors"
             />
