@@ -10,6 +10,7 @@ module.exports = {
   JWT_SECRET: process.env.JWT_SECRET || 'secretkey',
   JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || '7d',
   GEMINI_API_KEY: process.env.GEMINI_API_KEY,
+  RESEND_API_KEY: process.env.RESEND_API_KEY,
   SMTP_HOST: process.env.SMTP_HOST,
   SMTP_PORT: parseInt(process.env.SMTP_PORT, 10) || 587,
   SMTP_USER: process.env.SMTP_USER,

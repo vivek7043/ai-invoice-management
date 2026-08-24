@@ -1,11 +1,11 @@
 const env = require('./src/config/env');
 const connectDB = require('./src/config/db');
-const { verifySmtpConnection } = require('./src/config/mail');
+const { verifyMailConfig } = require('./src/config/mail');
 const app = require('./src/app');
 
 async function startServer() {
   await connectDB();
-  await verifySmtpConnection();
+  await verifyMailConfig();
 
   const PORT = env.PORT || 5000;
   app.listen(PORT, () => {

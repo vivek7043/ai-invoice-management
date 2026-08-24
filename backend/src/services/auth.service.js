@@ -140,7 +140,10 @@ async function loginUser({ email, password }) {
 async function forgotPassword(email) {
   const cleanEmail = email.trim().toLowerCase();
 
+  console.log("Searching email:", cleanEmail);
   const user = await User.findOne({ email: cleanEmail });
+  console.log("User found:", Boolean(user));
+
   if (!user) {
     throw new Error('No registered account found with this email address');
   }
