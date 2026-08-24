@@ -11,13 +11,36 @@ function formatDateKey(dateObj) {
   return `${year}-${month}-${day}`;
 }
 
+const lastSyncMap = new Map();
+
 async function syncInvoiceNotifications(userId = null, companyId = null) {
   try {
+    const cacheKey = String(companyId || userId || 'global');
+    const nowMs = Date.now();
+    const lastSync = lastSyncMap.get(cacheKey) || 0;
+    if (nowMs - lastSync < 10000) {
+      // Synced within last 10 seconds for this workspace, skip redundant query loop
+      return;
+    }
+    lastSyncMap.set(cacheKey, nowMs);
+
     const filter = companyId
       ? { companyId }
       : (userId ? { user: userId } : { companyId: new mongoose.Types.ObjectId() });
-    
-    const invoices = await Invoice.find(filter);
+
+    const invoices = await Invoice.find(filter).lean();
+    if (!invoices || invoices.length === 0) return;
+
+    // Single bulk query for existing notifications to avoid N+1 queries
+    const notifFilter = companyId
+      ? { companyId }
+      : (userId ? { userId } : {});
+    const existingNotifs = await Notification.find(notifFilter).select('eventId invoiceId type').lean();
+
+    const existingEventIds = new Set(existingNotifs.map((n) => n.eventId).filter(Boolean));
+    const existingInvoiceTypeKeys = new Set(
+      existingNotifs.map((n) => (n.invoiceId ? `${n.invoiceId}_${n.type}` : null)).filter(Boolean)
+    );
 
     const today = new Date();
     const todayStr = formatDateKey(today);
@@ -25,20 +48,13 @@ async function syncInvoiceNotifications(userId = null, companyId = null) {
 
     for (const inv of invoices) {
       const isPaid = (inv.status || '').toUpperCase() === 'PAID' || (inv.paymentStatus || '').toUpperCase() === 'PAID';
-      
-      if (isPaid) {
-        continue;
-      }
+      if (isPaid) continue;
 
       const dueStr = inv.dueDate || inv.paymentDueDate;
-      if (!dueStr) {
-        continue;
-      }
+      if (!dueStr) continue;
 
       const dueDt = new Date(dueStr);
-      if (isNaN(dueDt.getTime())) {
-        continue;
-      }
+      if (isNaN(dueDt.getTime())) continue;
 
       const dueMidnight = new Date(dueDt.getFullYear(), dueDt.getMonth(), dueDt.getDate()).getTime();
       const diffMs = dueMidnight - todayMidnight;
@@ -65,15 +81,11 @@ async function syncInvoiceNotifications(userId = null, companyId = null) {
 
       if (notificationType) {
         const eventId = `reminder_${inv._id}_${notificationType}_${todayStr}`;
-        // Prevent creating duplicate notification if one already exists for this invoice and type or eventId
-        const existing = await Notification.findOne({
-          $or: [
-            { eventId },
-            { invoiceId: inv._id, type: notificationType },
-          ],
-        });
+        const invTypeKey = `${inv._id}_${notificationType}`;
 
-        if (!existing) {
+        const exists = existingEventIds.has(eventId) || existingInvoiceTypeKeys.has(invTypeKey);
+
+        if (!exists) {
           try {
             const newNotif = new Notification({
               companyId: inv.companyId || companyId,
@@ -86,6 +98,9 @@ async function syncInvoiceNotifications(userId = null, companyId = null) {
               isRead: false,
             });
             await newNotif.save();
+
+            existingEventIds.add(eventId);
+            existingInvoiceTypeKeys.add(invTypeKey);
 
             await createAuditLog({
               companyId: inv.companyId || companyId,

@@ -46,9 +46,17 @@ export default function Settings() {
 
       try {
         const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000').replace(/\/$/, '')
-        // 1. Profile
-        const profRes = await fetch(`${API_BASE_URL}/api/settings/profile`, { headers })
-        const profData = await profRes.json()
+        
+        const [profRes, compRes] = await Promise.all([
+          fetch(`${API_BASE_URL}/api/settings/profile`, { headers }),
+          fetch(`${API_BASE_URL}/api/settings/company`, { headers }),
+        ])
+
+        const [profData, compData] = await Promise.all([
+          profRes.json().catch(() => ({})),
+          compRes.json().catch(() => ({})),
+        ])
+
         if (profRes.ok && profData.success) {
           const loadedProf = {
             name: profData.profile.name || '',
@@ -64,9 +72,6 @@ export default function Settings() {
           })
         }
 
-        // 2. Company
-        const compRes = await fetch(`${API_BASE_URL}/api/settings/company`, { headers })
-        const compData = await compRes.json()
         if (compRes.ok && compData.success && compData.company) {
           const loadedComp = {
             companyName: compData.company.companyName || '',
